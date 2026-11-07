@@ -1,0 +1,316 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Public and private profile information for a TikVideo user",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Unique Firebase Auth UID"
+        },
+        "name": {
+          "type": "string",
+          "description": "User display name"
+        },
+        "handle": {
+          "type": "string",
+          "description": "Unique username handle e.g. @hamza_creatives"
+        },
+        "bio": {
+          "type": "string",
+          "description": "User bio description"
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "Profile picture URL"
+        },
+        "followingCount": {
+          "type": "integer",
+          "description": "Number of users followed"
+        },
+        "followersCount": {
+          "type": "integer",
+          "description": "Number of followers"
+        },
+        "likesCount": {
+          "type": "integer",
+          "description": "Total likes received"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp via FieldValue.serverTimestamp()"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp via FieldValue.serverTimestamp()"
+        }
+      },
+      "required": ["userId", "name", "handle", "createdAt"]
+    },
+    "Video": {
+      "title": "Video",
+      "description": "Short form video item in TikVideo feed",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Creator Auth UID"
+        },
+        "creatorName": {
+          "type": "string",
+          "description": "Creator display name"
+        },
+        "creatorHandle": {
+          "type": "string",
+          "description": "Creator username handle"
+        },
+        "caption": {
+          "type": "string",
+          "description": "Video caption with hashtags"
+        },
+        "soundTitle": {
+          "type": "string",
+          "description": "Audio track title"
+        },
+        "likesCount": {
+          "type": "integer",
+          "description": "Total likes count"
+        },
+        "commentsCount": {
+          "type": "integer",
+          "description": "Total comments count"
+        },
+        "sharesCount": {
+          "type": "integer",
+          "description": "Total shares count"
+        },
+        "bookmarksCount": {
+          "type": "integer",
+          "description": "Total bookmarks count"
+        },
+        "bgStartColor": {
+          "type": "integer",
+          "description": "Background gradient start color integer"
+        },
+        "bgEndColor": {
+          "type": "integer",
+          "description": "Background gradient end color integer"
+        },
+        "category": {
+          "type": "string",
+          "enum": ["FOR_YOU", "FOLLOWING", "FRIENDS"],
+          "description": "Feed category tab"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp via FieldValue.serverTimestamp()"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Update timestamp via FieldValue.serverTimestamp()"
+        }
+      },
+      "required": ["userId", "creatorName", "creatorHandle", "caption", "soundTitle", "category", "createdAt"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "Comment on a TikVideo video",
+      "type": "object",
+      "properties": {
+        "videoId": {
+          "type": "string",
+          "description": "ID of the video commented on"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Comment author Auth UID"
+        },
+        "author": {
+          "type": "string",
+          "description": "Author display name"
+        },
+        "authorHandle": {
+          "type": "string",
+          "description": "Author username handle"
+        },
+        "text": {
+          "type": "string",
+          "description": "Comment text content"
+        },
+        "likes": {
+          "type": "integer",
+          "description": "Comment likes count"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp via FieldValue.serverTimestamp()"
+        }
+      },
+      "required": ["videoId", "userId", "author", "authorHandle", "text", "createdAt"]
+    },
+    "Chat": {
+      "title": "Chat",
+      "description": "Direct message chat item between users",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner Auth UID"
+        },
+        "recipientId": {
+          "type": "string",
+          "description": "Recipient Auth UID or handle"
+        },
+        "name": {
+          "type": "string",
+          "description": "Recipient display name"
+        },
+        "handle": {
+          "type": "string",
+          "description": "Recipient username handle"
+        },
+        "lastMessage": {
+          "type": "string",
+          "description": "Last sent or received message"
+        },
+        "unreadCount": {
+          "type": "integer",
+          "description": "Number of unread messages"
+        },
+        "isFriend": {
+          "type": "boolean",
+          "description": "Whether recipient is mutual friend"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Chat creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last message timestamp"
+        }
+      },
+      "required": ["userId", "recipientId", "name", "handle", "lastMessage", "createdAt"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "Alert notification for a user",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Recipient Auth UID"
+        },
+        "title": {
+          "type": "string",
+          "description": "Notification title"
+        },
+        "message": {
+          "type": "string",
+          "description": "Notification message body"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["ALL", "LIKES", "COMMENTS", "FOLLOWERS"],
+          "description": "Notification category"
+        },
+        "isRead": {
+          "type": "boolean",
+          "description": "Read status"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp created"
+        }
+      },
+      "required": ["userId", "title", "message", "type", "isRead", "createdAt"]
+    },
+    "UserLike": {
+      "title": "UserLike",
+      "description": "Record of a video liked by the user",
+      "type": "object",
+      "properties": {
+        "videoId": {
+          "type": "string",
+          "description": "Liked video ID"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp liked"
+        }
+      },
+      "required": ["videoId", "createdAt"]
+    },
+    "UserBookmark": {
+      "title": "UserBookmark",
+      "description": "Record of a video saved by the user",
+      "type": "object",
+      "properties": {
+        "videoId": {
+          "type": "string",
+          "description": "Bookmarked video ID"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp bookmarked"
+        }
+      },
+      "required": ["videoId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserProfile"
+      },
+      "description": "User profiles stored by Auth UID"
+    },
+    "/users/{userId}/chats/{chatId}": {
+      "schema": {
+        "$ref": "#/entities/Chat"
+      },
+      "description": "User direct message conversations"
+    },
+    "/users/{userId}/notifications/{notificationId}": {
+      "schema": {
+        "$ref": "#/entities/Notification"
+      },
+      "description": "User notifications and activity alerts"
+    },
+    "/users/{userId}/likes/{videoId}": {
+      "schema": {
+        "$ref": "#/entities/UserLike"
+      },
+      "description": "Videos liked by the user"
+    },
+    "/users/{userId}/saved/{videoId}": {
+      "schema": {
+        "$ref": "#/entities/UserBookmark"
+      },
+      "description": "Videos saved/bookmarked by the user"
+    },
+    "/videos/{videoId}": {
+      "schema": {
+        "$ref": "#/entities/Video"
+      },
+      "description": "Shared video feed posts"
+    },
+    "/videos/{videoId}/comments/{commentId}": {
+      "schema": {
+        "$ref": "#/entities/Comment"
+      },
+      "description": "Comments left on a video"
+    }
+  }
+}

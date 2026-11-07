@@ -1,0 +1,218 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened Global Helpers
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Validation helper for User Profile
+    function isValidUserProfile(data) {
+      return data.userId is string && data.userId.size() <= 128 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 80 &&
+             data.handle is string && data.handle.size() > 0 && data.handle.size() <= 60 &&
+             (!('bio' in data) || (data.bio is string && data.bio.size() <= 500)) &&
+             (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 1000)) &&
+             (!('followingCount' in data) || data.followingCount is int) &&
+             (!('followersCount' in data) || data.followersCount is int) &&
+             (!('likesCount' in data) || data.likesCount is int);
+    }
+
+    // Validation helper for Video
+    function isValidVideo(data) {
+      return data.userId is string && data.userId.size() <= 128 &&
+             data.creatorName is string && data.creatorName.size() > 0 && data.creatorName.size() <= 80 &&
+             data.creatorHandle is string && data.creatorHandle.size() > 0 && data.creatorHandle.size() <= 60 &&
+             data.caption is string && data.caption.size() <= 1000 &&
+             data.soundTitle is string && data.soundTitle.size() <= 200 &&
+             data.category in ['FOR_YOU', 'FOLLOWING', 'FRIENDS'] &&
+             (!('likesCount' in data) || data.likesCount is int) &&
+             (!('commentsCount' in data) || data.commentsCount is int) &&
+             (!('sharesCount' in data) || data.sharesCount is int) &&
+             (!('bookmarksCount' in data) || data.bookmarksCount is int) &&
+             (!('bgStartColor' in data) || data.bgStartColor is int) &&
+             (!('bgEndColor' in data) || data.bgEndColor is int);
+    }
+
+    // Validation helper for Comment
+    function isValidComment(data) {
+      return data.videoId is string && data.videoId.size() <= 128 &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.author is string && data.author.size() > 0 && data.author.size() <= 80 &&
+             data.authorHandle is string && data.authorHandle.size() > 0 && data.authorHandle.size() <= 60 &&
+             data.text is string && data.text.size() > 0 && data.text.size() <= 500 &&
+             (!('likes' in data) || data.likes is int);
+    }
+
+    // Validation helper for Chat
+    function isValidChat(data) {
+      return data.userId is string && data.userId.size() <= 128 &&
+             data.recipientId is string && data.recipientId.size() <= 128 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 80 &&
+             data.handle is string && data.handle.size() > 0 && data.handle.size() <= 60 &&
+             data.lastMessage is string && data.lastMessage.size() <= 1000 &&
+             (!('unreadCount' in data) || data.unreadCount is int) &&
+             (!('isFriend' in data) || data.isFriend is bool);
+    }
+
+    // Validation helper for Notification
+    function isValidNotification(data) {
+      return data.userId is string && data.userId.size() <= 128 &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 100 &&
+             data.message is string && data.message.size() <= 500 &&
+             data.type in ['ALL', 'LIKES', 'COMMENTS', 'FOLLOWERS'] &&
+             data.isRead is bool;
+    }
+
+    // Validation helper for UserLike & UserBookmark
+    function isValidUserInteraction(data) {
+      return data.videoId is string && data.videoId.size() <= 128 &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    // 1. User Profiles
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().createdAt is timestamp &&
+                       incoming().createdAt <= request.time &&
+                       isValidUserProfile(incoming());
+
+      allow update: if isOwner(userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       (!('updatedAt' in incoming()) || (incoming().updatedAt is timestamp && incoming().updatedAt <= request.time)) &&
+                       isValidUserProfile(incoming());
+
+      allow delete: if isOwner(userId);
+
+      // User Chats Subcollection
+      match /chats/{chatId} {
+        allow get, list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(chatId) &&
+                         incoming().userId == request.auth.uid &&
+                         incoming().createdAt is timestamp &&
+                         incoming().createdAt <= request.time &&
+                         isValidChat(incoming());
+
+        allow update: if isOwner(userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidChat(incoming());
+
+        allow delete: if isOwner(userId);
+      }
+
+      // User Notifications Subcollection
+      match /notifications/{notificationId} {
+        allow get, list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(notificationId) &&
+                         incoming().userId == request.auth.uid &&
+                         incoming().createdAt is timestamp &&
+                         incoming().createdAt <= request.time &&
+                         isValidNotification(incoming());
+
+        allow update: if isOwner(userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidNotification(incoming());
+
+        allow delete: if isOwner(userId);
+      }
+
+      // User Likes Subcollection
+      match /likes/{videoId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(videoId) && isValidUserInteraction(incoming());
+        allow delete: if isOwner(userId);
+      }
+
+      // User Saved Subcollection
+      match /saved/{videoId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(videoId) && isValidUserInteraction(incoming());
+        allow delete: if isOwner(userId);
+      }
+    }
+
+    // 2. Videos Collection
+    match /videos/{videoId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+
+      allow create: if isSignedIn() &&
+                       isValidId(videoId) &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().createdAt is timestamp &&
+                       incoming().createdAt <= request.time &&
+                       isValidVideo(incoming());
+
+      allow update: if isSignedIn() && (
+                       // Author update
+                       (existing().userId == request.auth.uid &&
+                        incoming().userId == existing().userId &&
+                        incoming().createdAt == existing().createdAt &&
+                        isValidVideo(incoming())) ||
+                       // Social interaction counter updates (like, comment, bookmark, share)
+                       (isValidVideo(incoming()) &&
+                        incoming().userId == existing().userId &&
+                        incoming().createdAt == existing().createdAt &&
+                        incoming().diff(existing()).affectedKeys().hasOnly(['likesCount', 'commentsCount', 'sharesCount', 'bookmarksCount']))
+                     );
+
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+
+      // Video Comments Subcollection
+      match /comments/{commentId} {
+        allow get, list: if isSignedIn();
+
+        allow create: if isSignedIn() &&
+                         isValidId(commentId) &&
+                         incoming().videoId == videoId &&
+                         incoming().userId == request.auth.uid &&
+                         incoming().createdAt is timestamp &&
+                         incoming().createdAt <= request.time &&
+                         isValidComment(incoming());
+
+        allow update: if isSignedIn() &&
+                         existing().userId == request.auth.uid &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['likes', 'text']) &&
+                         isValidComment(incoming());
+
+        allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+      }
+    }
+  }
+}

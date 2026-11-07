@@ -1,0 +1,6 @@
+{
+  "name": "TikVideo",
+  "description": "TikVideo short video platform clone with feed, chat, upload, notifications, and profile",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
